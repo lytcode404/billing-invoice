@@ -77,7 +77,7 @@ const CreateInvoice = () => {
     );
   };
 
-  const handleUploadTest = async () => {
+  const handleCreateInvoice = async () => {
     if (cName.trim() === "" || cEMail.trim() === "" || cPh.trim() === ""){
       toast.error("Please fill out customer Name and customer Email and customer Phone");
       return;
@@ -250,9 +250,9 @@ const CreateInvoice = () => {
       <div className="my-4">
         <button
           className="bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600"
-          onClick={handleUploadTest}
+          onClick={handleCreateInvoice}
         >
-          Upload Test
+          Create Invoice
         </button>
       </div>
       <ToastContainer position="bottom-right" autoClose={2000} />

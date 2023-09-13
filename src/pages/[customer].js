@@ -4,6 +4,9 @@ import { db } from "@/db/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
+import html2canvas from "html2canvas";
+
+import JsPDF from "jspdf";
 
 const CustomerPage = () => {
   const router = useRouter();
@@ -15,7 +18,7 @@ const CustomerPage = () => {
   const [taxRate, setTaxRate] = useState(0.18);
   const [taxAmount, setTaxAmount] = useState(0);
   const [total, setTotal] = useState(0);
-              
+
   const invoiceRef = useRef(null);
 
   useEffect(() => {
@@ -26,7 +29,7 @@ const CustomerPage = () => {
 
         if (invoiceSnapshot.exists()) {
           const invoiceData = invoiceSnapshot.data();
-         
+
           setData(invoiceData);
         } else {
           console.log("Document does not exist.");
@@ -36,7 +39,7 @@ const CustomerPage = () => {
       }
     };
 
-   
+
     fetchInvoice();
   }, [customer]);
 
@@ -59,25 +62,39 @@ const CustomerPage = () => {
   }, []);
 
   const generatePDF = () => {
-    const content = invoiceRef.current;
+   
 
-    html2canvas(content).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "pt",
-        format: "a4",
-      });
 
-      // Calculate the dimensions for the PDF page
+    
+    const content = document.getElementById("invoice");
+    // const content = invoiceRef.current;
+    const pdf = new JsPDF({
+      orientation: "landscape", // Set the orientation to landscape
+      unit: "pt",
+      format: "a4",
+    });
+
+    html2canvas(invoiceRef.current).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+
+      // Calculate the correct dimensions for the PDF page
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
 
-      // Add the image to the PDF
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const widthRatio = pdfWidth / imgWidth;
+      const heightRatio = pdfHeight / imgHeight;
+      const ratio = Math.min(widthRatio, heightRatio);
 
-      // Save the PDF
-      pdf.save("invoice.pdf");
+      const newWidth = imgWidth * ratio;
+      const newHeight = imgHeight * ratio;
+
+      // Add the image to the PDF with adjusted dimensions
+      pdf.addImage(imgData, 'PNG', 0, 0, newWidth, newHeight);
+
+      // Save or download the PDF
+      pdf.save('invoice.pdf');
     });
   };
 
@@ -88,16 +105,16 @@ const CustomerPage = () => {
 
   useEffect(() => {
     setSubTotal(parseInt(data.grandTotal))
-    setTaxAmount((subTotal*taxRate).toFixed(2))
-    setTotal(subTotal+taxAmount)
+    setTaxAmount((subTotal * taxRate).toFixed(2))
+    setTotal(subTotal + taxAmount)
   }, [data, subTotal, taxAmount, taxRate, total])
-  
-  
+
+
   return (
     <div>
       {data && (
         <>
-          <div id="invoice" ref={invoiceRef}>
+          <div >
             <div>
               <h1>Invoice</h1>
               <p>Order Date: {currentDate}</p>
@@ -144,10 +161,10 @@ const CustomerPage = () => {
             {/* Grand Total */}
             <div>
               <h2>Grand Total</h2>
-              <p>Sub Total: ${subTotal&&subTotal}</p>
-              <p>GST Rate: {taxRate&&taxRate}%</p>
-              <p>GST Amount: ${taxAmount&&taxAmount}</p>
-              <p>Total: ${subTotal&&taxAmount && (parseInt(taxAmount)+parseInt(subTotal))}</p>
+              <p>Sub Total: ${subTotal && subTotal}</p>
+              <p>GST Rate: {taxRate && taxRate}%</p>
+              <p>GST Amount: ${taxAmount && taxAmount}</p>
+              <p>Total: ${subTotal && taxAmount && (parseInt(taxAmount) + parseInt(subTotal))}</p>
             </div>
 
             {/* Terms and Conditions */}
@@ -169,7 +186,7 @@ const CustomerPage = () => {
             </div>
           </div>
 
-          <PdfInvoice total={total} subTotal={subTotal} taxAmount={taxAmount} data={data} currentDate={currentDate} formattedTime={formattedTime} />
+          <PdfInvoice id="invoice" ref={invoiceRef} total={total} subTotal={subTotal} taxAmount={taxAmount} data={data} currentDate={currentDate} formattedTime={formattedTime} />
         </>
       )}
     </div>
